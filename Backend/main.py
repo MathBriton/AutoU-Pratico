@@ -1,10 +1,11 @@
 from fastapi import FastAPI
-from api import routes
+from api.routes import router as email_router  # import mais explícito
 
-app = FastAPI(title="Email classificer API")
+app = FastAPI(title="Email Classifier API")
 
-app.include_router(routes.router)
+# Registrar rotas
+app.include_router(email_router)
 
 @app.get("/")
 def root():
-    return{"message":"API de classificação de Emails rodando!"}
+    return {"message": "API de classificação de Emails rodando!"}
