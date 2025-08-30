@@ -15,24 +15,28 @@ async def processar_email(file: UploadFile = None, texto: str = Form(None)):
     realiza pré-processamento, classifica como Produtivo ou Improdutivo,
     e sugere uma resposta automática.
     """
-    # 1. Extrair conteúdo
     conteudo = ""
+
     if file:
         raw = await file.read()
+        print(f"[INFO] Recebido arquivo: {file.filename}, tamanho: {len(raw)} bytes")
         conteudo = file_parser.parse_file(file.filename, raw)
+        print(f"[INFO] Conteúdo extraído (primeiros 200 caracteres): {conteudo[:200]}")
+
     elif texto:
         conteudo = texto
+        print(f"[INFO] Texto recebido direto: {conteudo[:200]}")
 
     if not conteudo:
         return JSONResponse(status_code=400, content={"erro": "Nenhum conteúdo válido encontrado."})
 
-    # 2. Pré-processar
+    # Pré-processamento NLP
     texto_limpo = nlp_service.preprocessar(conteudo)
 
-    # 3. Classificar
+    # Classificação via AI
     categoria, confianca = ai_service.classificar(texto_limpo)
 
-    # 4. Gerar resposta
+    # Geração de resposta via AI
     resposta = ai_service.gerar_resposta(categoria)
 
     return {

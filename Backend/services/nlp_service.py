@@ -1,41 +1,33 @@
+# services/nlp_service.py
+
+import spacy
 import re
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import SnowballStemmer
 
-# Certifique-se de baixar as stopwords
-nltk.download('stopwords')
-
-# Carregar stopwords e stemmer
-STOP_WORDS = set(stopwords.words('portuguese'))
-STEMMER = SnowballStemmer('portuguese')
+# Carregar modelo em português
+# Você pode usar "pt_core_news_sm" ou instalar com:
+# python -m spacy download pt_core_news_sm
+nlp = spacy.load("pt_core_news_sm")
 
 def preprocessar(texto: str) -> str:
     """
-    Pré-processa o texto do email para NLP:
-    - converte para minúsculas
-    - remove caracteres especiais
-    - tokeniza
-    - remove stopwords
-    - aplica stemming
-    Retorna o texto processado pronto para classificação.
+    Pré-processa o texto:
+    - Remove caracteres especiais
+    - Remove múltiplos espaços
+    - Remove stop words
+    - Aplica lematização
     """
-    # 1. Converter para minúsculas
+    # 1. Normalização básica
     texto = texto.lower()
-    
-    # 2. Remover caracteres especiais (mantendo letras e números)
-    texto = re.sub(r'[^a-zA-Z0-9\s]', '', texto)
-    
-    # 3. Tokenizar por espaço
-    tokens = texto.split()
-    
-    # 4. Remover stopwords
-    tokens = [t for t in tokens if t not in STOP_WORDS]
-    
-    # 5. Aplicar stemming
-    tokens = [STEMMER.stem(t) for t in tokens]
-    
-    # 6. Reconstruir texto
-    texto_processado = ' '.join(tokens)
-    
-    return texto_processado
+    texto = re.sub(r"\s+", " ", texto)  # remover múltiplos espaços
+    texto = re.sub(r"[^\w\s]", "", texto)  # remover pontuação
+
+    # 2. Processar com spaCy
+    doc = nlp(texto)
+    tokens = [
+        token.lemma_ for token in doc
+        if not token.is_stop and token.lemma_.strip() != ""
+    ]
+
+    # 3. Reconstruir texto limpo
+    texto_limpo = " ".join(tokens)
+    return texto_limpo

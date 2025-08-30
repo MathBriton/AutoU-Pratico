@@ -1,65 +1,43 @@
 import os
-import openai
+from openai import OpenAI
 
-# Defina sua chave de API como variável de ambiente
-# Ex: export OPENAI_API_KEY="sua_chave"
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Pega a chave da variável de ambiente
+api_key = os.getenv("OPENAI_API_KEY")
+
+if not api_key:
+    raise RuntimeError("A variável de ambiente OPENAI_API_KEY não está definida!")
+
+client = OpenAI(api_key=api_key)
 
 def classificar(texto: str):
-    """
-    Recebe o texto pré-processado e retorna:
-    - categoria: "Produtivo" ou "Improdutivo"
-    - confianca: estimativa de confiança (0 a 1)
-    """
-    try:
-        prompt = f"""
-        Você é um assistente que classifica emails em duas categorias:
-        - Produtivo: emails que requerem ação ou resposta.
-        - Improdutivo: emails que não requerem ação imediata.
+    prompt = (
+        "Classifique o seguinte email em 'Produtivo' ou 'Improdutivo':\n\n"
+        f"{texto}\n\n"
+        "Retorne apenas a categoria e uma confiança estimada de 0 a 1."
+    )
 
-        Classifique o seguinte email e responda apenas com o nome da categoria:
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=50
+    )
 
-        {texto}
-        """
-
-        resposta = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt,
-            max_tokens=10,
-            temperature=0
-        )
-
-        categoria = resposta.choices[0].text.strip()
-        # Ajuste simples para confiança
-        confianca = 0.95 if categoria.lower() in ["produtivo", "improdutivo"] else 0.5
-
-        return categoria, confianca
-
-    except Exception as e:
-        print("Erro ao classificar:", e)
-        return "Indefinido", 0.0
+    content = response.choices[0].message.content.strip()
+    if "produtivo" in content.lower():
+        return "Produtivo", 0.95
+    else:
+        return "Improdutivo", 0.95
 
 def gerar_resposta(categoria: str):
-    """
-    Gera uma resposta automática baseada na categoria
-    """
-    try:
-        if categoria.lower() == "produtivo":
-            prompt = "Gere uma resposta educada e útil para um email produtivo."
-        elif categoria.lower() == "improdutivo":
-            prompt = "Gere uma resposta breve indicando que não é necessária ação."
-        else:
-            prompt = "Gere uma resposta padrão indicando que o email não pôde ser classificado."
+    if categoria == "Produtivo":
+        prompt = "Crie uma resposta educada e útil para um email produtivo."
+    else:
+        prompt = "Crie uma resposta breve e cortês para um email improdutivo."
 
-        resposta = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt,
-            max_tokens=50,
-            temperature=0.7
-        )
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=100
+    )
 
-        return resposta.choices[0].text.strip()
-
-    except Exception as e:
-        print("Erro ao gerar resposta:", e)
-        return "Não foi possível gerar uma resposta."
+    return response.choices[0].message.content.strip()

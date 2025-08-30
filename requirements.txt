@@ -1,4 +1,7 @@
 fastapi
 uvicorn
-nltk
 PyPDF2
+pdf2image
+pytesseract
+openai
+python-multipart
